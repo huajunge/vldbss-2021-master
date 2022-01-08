@@ -2,7 +2,8 @@
 
 ## 作业1. 完成 Map-Reduce 框架
 - 流程图
-![img_2.png](img_2.png)- 实现Reduce阶段
+![img_2.png](img_2.png) 
+- 实现Reduce阶段
 1. 获取文件路径
 
     在map阶段，每个map task （记作，*i*）产生的中间结果，将分配到nReduce个文件中，分别命名为xxx-i-0、xxx-i-1、...、 xxx-i-(nReduce-1)。其中，对于任意一个key-value，将存储在xxx-i-(hash(key)%nReduce)文件中。因此，在reduce阶段，我们需要拿到每一个map操作为当前reduce task保存中间结果，并做为输入。（Line 121）
