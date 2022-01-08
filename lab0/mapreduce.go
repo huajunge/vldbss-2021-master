@@ -109,38 +109,36 @@ func (c *MRCluster) worker() {
 				}
 			} else {
 				// YOUR CODE HERE :)
-				// hint: don't encode results returned by ReduceF, and just output
+				// hint: don't encode keyValues returned by ReduceF, and just output
 				// them into the destination file directly so that users can get
-				// results formatted as what they want.
+				// keyValues formatted as what they want.
 				if reducePhase != t.phase {
-					panic("Cannot distinguish this task phase: " + t.phase)
+					panic("Unable to recognize this task phase: " + t.phase)
 				}
 
-				reduceRes := make(map[string][]string)
+				keyValues := make(map[string][]string)
 				for i := 0; i < t.nMap; i++ {
-					//get location of map result
-					mappedFileName := reduceName(t.dataDir, t.jobName, i, t.taskNumber)
-					mappedFile, err := os.Open(mappedFileName)
+					intermediateFile, err := os.Open(reduceName(t.dataDir, t.jobName, i, t.taskNumber))
 					if err != nil {
-						log.Fatalln("open mapped file error: ", mappedFileName, " error: ", err)
+						log.Fatalln(err)
 					}
-
-					dec := json.NewDecoder(mappedFile)
+					decoder := json.NewDecoder(intermediateFile)
 					for {
 						var kv KeyValue
-						if err := dec.Decode(&kv); err != nil {
-							break //EOF
+						if err := decoder.Decode(&kv); err != nil {
+							break
 						}
-						if _, exist := reduceRes[kv.Key]; !exist {
-							reduceRes[kv.Key] = make([]string, 0)
+						if keyValues[kv.Key] == nil {
+							keyValues[kv.Key] = make([]string, 0)
 						}
-						reduceRes[kv.Key] = append(reduceRes[kv.Key], kv.Value)
+						keyValues[kv.Key] = append(keyValues[kv.Key], kv.Value)
 					}
-					SafeClose(mappedFile, nil)
+					SafeClose(intermediateFile, nil)
 				}
 
 				fs, bs := CreateFileAndBuf(mergeName(t.dataDir, t.jobName, t.taskNumber))
-				for k, v := range reduceRes {
+
+				for k, v := range keyValues {
 					WriteToBuf(bs, t.reduceF(k, v))
 				}
 				SafeClose(fs, bs)
